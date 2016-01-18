@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:file="http://www.springframework.org/schema/integration/file"
+	xmlns:feed="http://www.springframework.org/schema/integration/feed"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd">
+
+	<!-- This file is the main place where Spring Integration channels and flow is 
+		configured. There is also a jva configuration way of doing this using annotations -->
+		
+	<!--  
+	the following configuration shows the following data integration pipeline:
+	    myUsers
+	-->
+	<!-- some channel name declarations needed for later -->
+	<int:channel id="myResponseChannel" />
+	<int:channel id="usersHttp" />
+
+	<!-- This is the basic polling mechanism for polling a channel on a fixed 
+		interval -->
+	<int:inbound-channel-adapter id="usersPoller"
+		expression="''" channel="usersHttp">
+		<int:poller fixed-rate="10000" />
+	</int:inbound-channel-adapter>
+
+	<!-- this is one way to call an outside HTTP-based service and retrieve 
+		the response -->
+	<int-http:outbound-gateway id="myUsers"
+		url="http://jsonplaceholder.typicode.com/users/1" http-method="GET"
+		expected-response-type="java.lang.String" request-channel="usersHttp"
+		reply-channel="myResponseChannel" />
+
+	<!-- this transforms a message between channels. You can also inject a java 
+		class for doing this or provide a DTO class to do simple marshalling and 
+		unmarshalling of xml or json responses -->
+	<int:transformer input-channel="myResponseChannel"
+		expression="'---' + '#{systemProperties['line.separator']}' + payload + '#{systemProperties['line.separator']}'"
+		output-channel="destination-file" />
+
+	<!-- this is a special channel type for writing to files -->
+	<file:outbound-channel-adapter id="destination-file"
+		mode="APPEND" charset="UTF-8" directory="/tmp/"
+		filename-generator-expression="'ulist.txt'" />
+</beans>

@@ -1,0 +1,17 @@
+/file-*
+*.DS_Store
+/build/
+target/
+bin/
+dependency-reduced-pom.xml
+.classpath
+.project
+.settings/
+*.iml
+*.ipr
+*.iws
+*.idea
+log.txt
+Thumbs.db
+*.orig
+*_stock.csv
